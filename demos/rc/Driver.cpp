@@ -129,7 +129,7 @@ void MyDisplayHandler(unsigned long windowID, tKeyboardModifier mod, char key)
 		{
 			int ikey = key - '0';
 			// TEMP: DO NOT ROTATE RC
-			// env.RotateFace(ikey, moveType);
+			env.RotateFace(ikey, moveType); // TESTING
 
 			cube.RotateFace(ikey*3+moveType);
 			

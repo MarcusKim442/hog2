@@ -29,7 +29,7 @@ std::vector<int> furthestZ(0);
 /* Called when cubie is initialized via the RCState
  * 
  */
-void Cubie::Initialize(int RCpos, int RCind, int RCrot)
+void Cubie::Initialize(int RCpos, int RCind, int RCrot, int rotating = -1)
 {
 	RCindex = RCind; // TEMP
 	// Reset previous data
@@ -83,11 +83,18 @@ void Cubie::Initialize(int RCpos, int RCind, int RCrot)
 	}
 	
 	// Visibible Faces -------------------------------------------------------------------------
+	
 	// Init faces
 	for (int i = 0; i < 6; i++)
 	{
 		faceCols[i] = inCol;
 		facesShown[i] = false;
+	}
+	
+	// If rotating: make appropriate black faces visible
+	if (rotating != -1)
+	{
+		
 	}
 	
 	// Do face visibility and colors depending on corner/edge
@@ -999,103 +1006,58 @@ void RC::RotateCubies(float add[3])
  */
 void RC::RotateFace(int face, int move)
 {
-	if (!rotating)
+	// If in the middle of a move: Reset
+	if (rotating)
 	{
-		bool clockwise = true;
-		int axis;
-		turnArr[0] = 0;
-		turnArr[1] = 0;
-		turnArr[2] = 0;
-		rotating = true;
-		faceTurning = face;
-		rotProgress = 0;
-		
-		float add = piOver2;
-		if (face == 0 || face == 3 || face == 4)
+		for (int i = 0; i < 26; i++)
 		{
-			add *= -1;
+			cubies[i].ResetVisibleFace();
 		}
-		if (face == 5 || face == 3 || face == 4 )
-		{
-			clockwise = !clockwise;
-		}
-		
-		// Move cubies on face
-		int temp, temp2;
-		
-		if (move == 0) //CW
-		{
-			temp = cubieInPos[cubiesOnFace[face][edgeOrder[3]]];
-			temp2 = cubieInPos[cubiesOnFace[face][cornerOrder[3]]];
-			for (int i = 3; i > 0; i--)
-			{
-				cubieInPos[cubiesOnFace[face][edgeOrder[i]]] = cubieInPos[cubiesOnFace[face][edgeOrder[i-1]]];
-				cubieInPos[cubiesOnFace[face][cornerOrder[i]]] = cubieInPos[cubiesOnFace[face][cornerOrder[i-1]]];
-			}
-			cubieInPos[cubiesOnFace[face][edgeOrder[0]]] = temp;
-			cubieInPos[cubiesOnFace[face][cornerOrder[0]]] = temp2;
-		} else if (move == 1) //CCW
-		{
-			add *= -1;
-			
-			temp = cubieInPos[cubiesOnFace[face][edgeOrder[0]]];
-			temp2 = cubieInPos[cubiesOnFace[face][cornerOrder[0]]];
-			for (int i = 0; i < 3; i++)
-			{
-				cubieInPos[cubiesOnFace[face][edgeOrder[i]]] = cubieInPos[cubiesOnFace[face][edgeOrder[i+1]]];
-				cubieInPos[cubiesOnFace[face][cornerOrder[i]]] = cubieInPos[cubiesOnFace[face][cornerOrder[i+1]]];
-			}
-			cubieInPos[cubiesOnFace[face][edgeOrder[3]]] = temp;
-			cubieInPos[cubiesOnFace[face][cornerOrder[3]]] = temp2;
-			
-			clockwise = !clockwise;
-		} else //180
-		{
-			add *= 2;
-			
-			for (int i = 0; i < 2; i++)
-			{
-				temp = cubieInPos[cubiesOnFace[face][edgeOrder[i]]];
-				temp2 = cubieInPos[cubiesOnFace[face][cornerOrder[i]]];
-				cubieInPos[cubiesOnFace[face][edgeOrder[i]]] = cubieInPos[cubiesOnFace[face][edgeOrder[i+2]]];
-				cubieInPos[cubiesOnFace[face][cornerOrder[i]]] = cubieInPos[cubiesOnFace[face][cornerOrder[i+2]]];
-				cubieInPos[cubiesOnFace[face][edgeOrder[i+2]]] = temp;
-				cubieInPos[cubiesOnFace[face][cornerOrder[i+2]]] = temp2;
-			}
-		}
-		//Set direction and distance of turn
-		if (face%5 == 0) {
-			turnArr[1] = add;
-			axis = 1;
-		} else if (face == 1 || face == 3) {
-			turnArr[2] = add;
-			axis = 2;
-		} else {
-			turnArr[0] = add;
-			axis = 0;
-		}
-		for (int i = 0; i < 9; i++)
-		{
-			//Edit the base to be FULLY rotated
-			cubies[cubieInPos[cubiesOnFace[faceTurning][i]]].RotateBase(turnArr);
-			
-			//Rotate Cubie face positions
-			cubies[cubieInPos[cubiesOnFace[faceTurning][i]]].RotateFacePos(clockwise, axis);
-			if (move == 2) cubies[cubieInPos[cubiesOnFace[faceTurning][i]]].RotateFacePos(clockwise, axis);
-			
-			//Set black face to be visible on each rotated cubie
-			cubies[cubieInPos[cubiesOnFace[faceTurning][i]]].SetFacePositionVisible(true, faceBlackUnderside[faceTurning]);
-			
-			//Set black face to be visible on each cubie now exposed by the turn face rotating
-			int toEdit = cubiesOnFace[faceTurning][i];
-			if (toEdit >= 13) toEdit++;
-			toEdit += fromFaceToCenter[faceTurning];
-			if (toEdit != 13)
-			{
-				if (toEdit >= 14) toEdit--;
-				cubies[cubieInPos[toEdit]].SetFacePositionVisible(true, faceTurning);
-			}
-		}
+	}
+	
+	bool clockwise = true;
+	int axis;
+	turnArr[0] = 0;
+	turnArr[1] = 0;
+	turnArr[2] = 0;
+	rotating = true;
+	faceTurning = face;
+	rotProgress = 0;
+	
+	// Modify rotations
+	float add = piOver2;
+	if (face == 0 || face == 3 || face == 4)
+	{
+		add *= -1;
+	}
+	if (face == 5 || face == 3 || face == 4 )
+	{
+		clockwise = false;
+	}
+
+	// Modify turn
+	if (move == 0) //CW
+	{
+		// Keep the same
+	} else 
+	if (move == 1) //CCW
+	{
+		add *= -1;
+	} else //180
+	{
+		add *= 2;
+	}
+	
+	//Set direction and distance of turn
+	if (face%5 == 0) {
+		turnArr[1] = add;
+		axis = 1;
+	} else if (face == 1 || face == 3) {
+		turnArr[2] = add;
+		axis = 2;
+	} else {
+		turnArr[0] = add;
+		axis = 0;
 	}
 }
 
@@ -1151,15 +1113,17 @@ void RC::TestUpdate()
 		testRot[2] = 0.03f;
 	}
 	
+	// Passive rotation
+	for (int i = 0; i < 3; i++)
+	{
+		rotationTotal[i] += testRot[i];
+	}
+	// If in the middle of a move: Rotate Individual face
 	if (rotating)
 	{
-		for (int i = 0; i < 3; i++)
-		{
-			rotationTotal[i] += testRot[i];
-		}
-		
-		rotProgress += turnSpd;
-		if (rotProgress > 1)
+		rotProgress += 0.01;
+		rotProgress += (1-rotProgress) * 0.1;
+		if (rotProgress > 0.995)
 		{
 			rotating = false;
 			rotProgress = 1;
@@ -1168,10 +1132,6 @@ void RC::TestUpdate()
 				cubies[i].ResetVisibleFace();
 			}
 		}
-		InterpFaceRot(rotProgress);
-	} else
-	{
-		RotateCubies(testRot);
 	}
 }
 
@@ -1713,16 +1673,51 @@ void RC::TestDraw(Graphics::Display &display, RCState & state)
 		cubies[convertStatePos[i]].Initialize(i, state.indices[i], state.rotation[i]);
 	}
 
-	// For every cubie, return it to its original draw angle, and then apply the needed rotation 
-	// This codeblock is a section from RotateCubies(), consider creating a new function
-	for (int i = 0; i < 26; i++)
+	if (!rotating)
 	{
-		cubies[i].ResetToBase();
-		cubies[i].RotateRelative(rotationTotal);
+		
+		// For every cubie, return it to its original draw angle, and then apply the needed rotation 
+		// This codeblock is a section from RotateCubies(), consider creating a new function
+		for (int i = 0; i < 26; i++)
+		{
+			cubies[i].ResetToBase();
+			cubies[i].RotateRelative(rotationTotal);
+		}
+		
+		// Draw the newly reset and rotated cubies
+		DrawCubies(display);
+		
+	} else
+	{
+		// Draw a face rotating
+		ShowBlackFaces(faceTurning);
+		
+		// For every cubie, return it to its original draw angle, and then apply the needed rotation 
+		InterpFaceRot(rotProgress);
+		
+		// Draw the newly reset and rotated cubies
+		DrawCubiesRotating(display);
 	}
-	
-	// Draw the newly reset and rotated cubies
-	DrawCubies(display);
+}
+
+// When a face is rotating, the black "undersides" some cubies must be shown every time the cubies intialize
+void RC::ShowBlackFaces(int faceTurning)
+{
+	for (int i = 0; i < 9; i++)
+	{			
+		//Set black face to be visible on each rotated cubie
+		cubies[cubiesOnFace[faceTurning][i]].SetFacePositionVisible(true, faceBlackUnderside[faceTurning]);
+		
+		//Set black face to be visible on each cubie now exposed by the turn face rotating
+		int toEdit = cubiesOnFace[faceTurning][i];
+		if (toEdit >= 13) toEdit++;
+		toEdit += fromFaceToCenter[faceTurning];
+		if (toEdit != 13)
+		{
+			if (toEdit >= 14) toEdit--;
+			cubies[toEdit].SetFacePositionVisible(true, faceTurning);
+		}
+	}
 }
 
 

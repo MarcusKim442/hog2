@@ -152,7 +152,7 @@ public:
 	};
 	
 	void Initialize(int ind);
-	void Initialize(int RCpos, int RCind, int RCrot);
+	void Initialize(int RCpos, int RCind, int RCrot, int rotating);
 	void Draw(Graphics::Display &display);
 	void DrawFace(Graphics::Display &display, int index);
 	void RotateRelative(float angle [3]);
@@ -443,6 +443,7 @@ public:
 	
 	void Draw(Graphics::Display &display, const RCState&) const;
 	void TestDraw(Graphics::Display &display, RCState &state);
+	void ShowBlackFaces(int faceTurning);
 	
 	void OpenGLDrawCube(int cube) const;
 	void SetFaceColor(int face) const;
